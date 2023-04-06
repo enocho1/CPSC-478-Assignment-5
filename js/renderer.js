@@ -270,10 +270,10 @@ Renderer.computeBoundingBox = function (projectedVerts) {
   // to loop over pixel locations in the bounding box for rasterization.
 
   var box = {};
-  box.minX = -1;
-  box.minY = -1;
-  box.maxX = -1;
-  box.maxY = -1;
+  box.minX = 100000000;
+  box.minY = 100000000;
+  box.maxX = -100000000;
+  box.maxY = -100000000;
 
   // ----------- STUDENT CODE BEGIN ------------
   // ----------- Our reference solution uses 14 lines of code.
@@ -358,9 +358,50 @@ Renderer.drawTriangleFlat = function (
   // Flat shader
   // Color of each face is computed based on the face normal
   // (average of vertex normals) and face centroid.
-  // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 52 lines of code.
-  // ----------- STUDENT CODE END ------------
+  const n1 = normals[0];
+  const n2 = normals[1];
+  const n3 = normals[2];
+
+  // Compute the face normal and centroid
+  const n = new THREE.Vector3();
+  n.crossVectors(n2.clone().sub(n1), n3.clone().sub(n1));
+  n.normalize();
+
+  const v1 = projectedVerts[0];
+  const v2 = projectedVerts[1];
+  const v3 = projectedVerts[2];
+  const centroid = new THREE.Vector3();
+  centroid.add(v1);
+  centroid.add(v2);
+  centroid.add(v3);
+  centroid.divideScalar(3);
+
+  // Compute the color of the face
+  const viewMat = new THREE.Matrix4().multiplyMatrices(
+    this.camera.projectionMatrix,
+    this.camera.matrixWorldInverse
+  );
+  const phongMaterial = this.getPhongMaterial(uvs, material);
+  const color = Reflection.phongReflectionModel(
+    centroid,
+    viewMat,
+    n,
+    this.lightPos,
+    phongMaterial
+  );
+
+  // this.buffer.setPixel(centroid.x, centroid.y, new THREE.Vector3(0, 0, 0));
+
+  // Rasterize the triangle
+  const box = this.computeBoundingBox(projectedVerts);
+  for (let x = box.minX; x <= box.maxX; x++) {
+    for (let y = box.minY; y <= box.maxY; y++) {
+      const triCoords = this.computeBarycentric(projectedVerts, x, y);
+      // if (triCoords) {
+      this.buffer.setPixel(x, y, new Pixel(1, 0, 0));
+      // }
+    }
+  }
 };
 
 Renderer.drawTriangleGouraud = function (
