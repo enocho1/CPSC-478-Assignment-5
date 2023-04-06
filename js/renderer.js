@@ -387,7 +387,6 @@ Renderer.drawTriangleFlat = function (
   for (let x = box.minX; x <= box.maxX; x++) {
     for (let y = box.minY; y <= box.maxY; y++) {
       const triCoords = this.computeBarycentric(projectedVerts, x, y);
-      console.log(triCoords);
       if (triCoords) {
         this.buffer.setPixel(Math.round(x), Math.round(y), color);
       }
