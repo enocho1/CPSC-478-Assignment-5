@@ -277,20 +277,12 @@ Renderer.computeBoundingBox = function (projectedVerts) {
 
   // ----------- STUDENT CODE BEGIN ------------
   // ----------- Our reference solution uses 14 lines of code.
-  for (var i = 0; i < 3; i++) {
-    let p = projectedVerts[i];
-    if (p.x < box.minX) {
-      box.minX = p.x;
-    }
-    if (p.y < box.minY) {
-      box.minY = p.y;
-    }
-    if (p.x > box.maxY) {
-      box.maxX = p.y;
-    }
-    if (p.x > box.maxX) {
-      box.maxX = p.x;
-    }
+  // Computing bounding box from projectedVerts
+  for (const p of projectedVerts) {
+    box.minX = Math.min(box.minX, p.x);
+    box.minY = Math.min(box.minY, p.y);
+    box.maxX = Math.max(box.maxX, p.x);
+    box.maxY = Math.max(box.maxY, p.y);
   }
   // ----------- STUDENT CODE END ------------
 
@@ -367,9 +359,9 @@ Renderer.drawTriangleFlat = function (
   n.crossVectors(n2.clone().sub(n1), n3.clone().sub(n1));
   n.normalize();
 
-  const v1 = projectedVerts[0];
-  const v2 = projectedVerts[1];
-  const v3 = projectedVerts[2];
+  const v1 = verts[0];
+  const v2 = verts[1];
+  const v3 = verts[2];
   const centroid = new THREE.Vector3();
   centroid.add(v1);
   centroid.add(v2);
@@ -390,16 +382,15 @@ Renderer.drawTriangleFlat = function (
     phongMaterial
   );
 
-  // this.buffer.setPixel(centroid.x, centroid.y, new THREE.Vector3(0, 0, 0));
-
   // Rasterize the triangle
   const box = this.computeBoundingBox(projectedVerts);
   for (let x = box.minX; x <= box.maxX; x++) {
     for (let y = box.minY; y <= box.maxY; y++) {
       const triCoords = this.computeBarycentric(projectedVerts, x, y);
-      // if (triCoords) {
-      this.buffer.setPixel(x, y, new Pixel(1, 0, 0));
-      // }
+      console.log(triCoords);
+      if (triCoords) {
+        this.buffer.setPixel(Math.round(x), Math.round(y), color);
+      }
     }
   }
 };
