@@ -6,7 +6,13 @@ var Reflection = Reflection || {
   shininess: 20,
 };
 
-Reflection.phongReflectionModel = function(vertex, view, normal, lightPos, phongMaterial) {
+Reflection.phongReflectionModel = function (
+  vertex,
+  view,
+  normal,
+  lightPos,
+  phongMaterial
+) {
   var color = new Pixel(0, 0, 0);
   normal.normalize();
 
@@ -38,13 +44,13 @@ var Renderer = Renderer || {
   cameraUpdated: true,
 };
 
-Renderer.updateCameraParameters = function() {
+Renderer.updateCameraParameters = function () {
   this.camera.position.copy(this.cameraPosition);
   this.camera.up.copy(this.cameraUpVector);
   this.camera.lookAt(this.cameraLookAtVector);
 };
 
-Renderer.initialize = function() {
+Renderer.initialize = function () {
   this.buffer = new Image(this.width, this.height);
   this.zBuffer = [];
 
@@ -61,7 +67,7 @@ Renderer.initialize = function() {
   this.buffer.display(); // initialize canvas
 };
 
-Renderer.clearZBuffer = function() {
+Renderer.clearZBuffer = function () {
   for (var x = 0; x < this.width; x++) {
     this.zBuffer[x] = new Float32Array(this.height);
     for (var y = 0; y < this.height; y++) {
@@ -70,26 +76,29 @@ Renderer.clearZBuffer = function() {
   }
 };
 
-Renderer.addMeshInstance = function(meshInstance) {
-  assert(meshInstance.mesh, "meshInstance must have mesh to be added to renderer");
+Renderer.addMeshInstance = function (meshInstance) {
+  assert(
+    meshInstance.mesh,
+    "meshInstance must have mesh to be added to renderer"
+  );
   this.meshInstances.add(meshInstance);
 };
 
-Renderer.removeMeshInstance = function(meshInstance) {
+Renderer.removeMeshInstance = function (meshInstance) {
   this.meshInstances.delete(meshInstance);
 };
 
-Renderer.clear = function() {
+Renderer.clear = function () {
   this.buffer.clear();
   this.clearZBuffer();
   Main.context.clearRect(0, 0, Main.canvas.width, Main.canvas.height);
 };
 
-Renderer.displayImage = function() {
+Renderer.displayImage = function () {
   this.buffer.display();
 };
 
-Renderer.render = function() {
+Renderer.render = function () {
   this.clear();
 
   var eps = 0.01;
@@ -124,7 +133,11 @@ Renderer.render = function() {
     if (mesh !== undefined) {
       for (var faceIdx = 0; faceIdx < mesh.faces.length; faceIdx++) {
         var face = mesh.faces[faceIdx];
-        var verts = [mesh.vertices[face.a], mesh.vertices[face.b], mesh.vertices[face.c]];
+        var verts = [
+          mesh.vertices[face.a],
+          mesh.vertices[face.b],
+          mesh.vertices[face.c],
+        ];
         var vert_normals = [
           mesh.vertex_normals[face.a],
           mesh.vertex_normals[face.b],
@@ -137,7 +150,13 @@ Renderer.render = function() {
           this.camera.matrixWorldInverse
         );
 
-        Renderer.drawTriangle(verts, vert_normals, mesh.uvs[faceIdx], meshInst.material, viewMat);
+        Renderer.drawTriangle(
+          verts,
+          vert_normals,
+          mesh.uvs[faceIdx],
+          meshInst.material,
+          viewMat
+        );
       }
     }
   }
@@ -145,7 +164,7 @@ Renderer.render = function() {
   this.displayImage();
 };
 
-Renderer.getPhongMaterial = function(uv_here, material) {
+Renderer.getPhongMaterial = function (uv_here, material) {
   var phongMaterial = {};
   phongMaterial.ambient = Reflection.ambient;
 
@@ -178,37 +197,65 @@ Renderer.getPhongMaterial = function(uv_here, material) {
   return phongMaterial;
 };
 
-Renderer.projectVerticesNaive = function(verts) {
+Renderer.projectVerticesNaive = function (verts) {
   // this is a naive orthogonal projection that does not even consider camera pose
   var projectedVerts = [];
 
   var orthogonalScale = 5;
   for (var i = 0; i < 3; i++) {
-    projectedVerts[i] = new THREE.Vector4(verts[i].x, verts[i].y, verts[i].z, 1.0);
+    projectedVerts[i] = new THREE.Vector4(
+      verts[i].x,
+      verts[i].y,
+      verts[i].z,
+      1.0
+    );
 
     projectedVerts[i].x /= orthogonalScale;
     projectedVerts[i].y /= (orthogonalScale * this.height) / this.width;
 
-    projectedVerts[i].x = (projectedVerts[i].x * this.width) / 2 + this.width / 2;
-    projectedVerts[i].y = (projectedVerts[i].y * this.height) / 2 + this.height / 2;
+    projectedVerts[i].x =
+      (projectedVerts[i].x * this.width) / 2 + this.width / 2;
+    projectedVerts[i].y =
+      (projectedVerts[i].y * this.height) / 2 + this.height / 2;
   }
 
   return projectedVerts;
 };
 
-Renderer.projectVertices = function(verts, viewMat) {
+Renderer.projectVertices = function (verts, viewMat) {
   // Vector3/Vector4 array of projected vertices in screen space coordinates
   // (you still need z for z buffering)
   var projectedVerts = [];
 
   // ----------- STUDENT CODE BEGIN ------------
   // ----------- Our reference solution uses 12 lines of code.
+  //for each vert on the triangle
+  
+  for (var i = 0; i < 3; i++) {
+    projectedVerts[i] = new THREE.Vector4(
+      verts[i].x,
+      verts[i].y,
+      verts[i].z,
+      1.0
+    ).applyMatrix4(viewMat);
+
+    let orthogonalScale = projectedVerts[i].w;
+
+
+    projectedVerts[i].x /= orthogonalScale;
+    projectedVerts[i].y /= (orthogonalScale);// * this.height) / this.width;
+
+    projectedVerts[i].x =
+      (projectedVerts[i].x * this.width) / 2 + this.width / 2;
+    projectedVerts[i].y =
+      (projectedVerts[i].y * this.height) / 2 + this.height / 2;
+  }
   // ----------- STUDENT CODE END ------------
 
   return projectedVerts;
 };
 
-Renderer.computeBoundingBox = function(projectedVerts) {
+Renderer.computeBoundingBox = function (projectedVerts) {
   // Compute the screen-space bounding box for the triangle defined in projectedVerts[0-2].
   // We will need to call this helper function in the shading functions
   // to loop over pixel locations in the bounding box for rasterization.
@@ -221,12 +268,27 @@ Renderer.computeBoundingBox = function(projectedVerts) {
 
   // ----------- STUDENT CODE BEGIN ------------
   // ----------- Our reference solution uses 14 lines of code.
+  for(var i = 0; i<3;i++){
+    let p = projectedVerts[i];
+    if(p.x<box.minX){
+      box.minX = p.x;
+    }
+    if(p.y<box.minY){
+      box.minY = p.y;
+    }
+    if(p.x>box.maxY){
+      box.maxX = p.y;
+    }
+    if(p.x>box.maxX){
+      box.maxX = p.x;
+    }
+  }
   // ----------- STUDENT CODE END ------------
 
   return box;
 };
 
-Renderer.computeBarycentric = function(projectedVerts, x, y) {
+Renderer.computeBarycentric = function (projectedVerts, x, y) {
   var triCoords = [];
   // (see https://fgiesen.wordpress.com/2013/02/06/the-barycentric-conspirac/)
   // return undefined if (x,y) is outside the triangle
@@ -236,7 +298,7 @@ Renderer.computeBarycentric = function(projectedVerts, x, y) {
   return triCoords;
 };
 
-Renderer.drawTriangleWire = function(projectedVerts) {
+Renderer.drawTriangleWire = function (projectedVerts) {
   var color = new Pixel(1.0, 0, 0);
   for (var i = 0; i < 3; i++) {
     var va = projectedVerts[(i + 1) % 3];
@@ -254,7 +316,13 @@ Renderer.drawTriangleWire = function(projectedVerts) {
   }
 };
 
-Renderer.drawTriangleFlat = function(verts, projectedVerts, normals, uvs, material) {
+Renderer.drawTriangleFlat = function (
+  verts,
+  projectedVerts,
+  normals,
+  uvs,
+  material
+) {
   // Flat shader
   // Color of each face is computed based on the face normal
   // (average of vertex normals) and face centroid.
@@ -263,7 +331,13 @@ Renderer.drawTriangleFlat = function(verts, projectedVerts, normals, uvs, materi
   // ----------- STUDENT CODE END ------------
 };
 
-Renderer.drawTriangleGouraud = function(verts, projectedVerts, normals, uvs, material) {
+Renderer.drawTriangleGouraud = function (
+  verts,
+  projectedVerts,
+  normals,
+  uvs,
+  material
+) {
   // Gouraud shader
   // Interpolate the color for each pixel in the triangle using the barycentric coordinate.
   // ----------- STUDENT CODE BEGIN ------------
@@ -271,7 +345,13 @@ Renderer.drawTriangleGouraud = function(verts, projectedVerts, normals, uvs, mat
   // ----------- STUDENT CODE END ------------
 };
 
-Renderer.drawTrianglePhong = function(verts, projectedVerts, normals, uvs, material) {
+Renderer.drawTrianglePhong = function (
+  verts,
+  projectedVerts,
+  normals,
+  uvs,
+  material
+) {
   // Phong shader
   // (1) Basic Phong shader: Interpolate the normal and vertex for each pixel in the triangle
   //                         using the barycentric coordinate.
@@ -286,7 +366,7 @@ Renderer.drawTrianglePhong = function(verts, projectedVerts, normals, uvs, mater
   // ----------- STUDENT CODE END ------------
 };
 
-Renderer.drawTriangle = function(verts, normals, uvs, material, viewMat) {
+Renderer.drawTriangle = function (verts, normals, uvs, material, viewMat) {
   var projectedVerts = this.projectVertices(verts, viewMat);
   if (projectedVerts === undefined) {
     // not within near and far plane
