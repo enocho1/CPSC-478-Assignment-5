@@ -23,7 +23,17 @@ Reflection.phongReflectionModel = function (
 
   // Ambient color and specular color
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 12 lines of code.
+  const ambient = phongMaterial.ambient;
+
+  // Ambient color
+  color.plus(ambient);
+
+  // Specular color
+  const specular = phongMaterial.specular.multipliedBy(
+    Math.pow(ndotl, phongMaterial.shininess)
+  );
+  color.plus(specular);
+
   // ----------- STUDENT CODE END ------------
 
   return color;
@@ -230,7 +240,7 @@ Renderer.projectVertices = function (verts, viewMat) {
   // ----------- STUDENT CODE BEGIN ------------
   // ----------- Our reference solution uses 12 lines of code.
   //for each vert on the triangle
-  
+
   for (var i = 0; i < 3; i++) {
     projectedVerts[i] = new THREE.Vector4(
       verts[i].x,
@@ -241,9 +251,8 @@ Renderer.projectVertices = function (verts, viewMat) {
 
     let orthogonalScale = projectedVerts[i].w;
 
-
     projectedVerts[i].x /= orthogonalScale;
-    projectedVerts[i].y /= (orthogonalScale);// * this.height) / this.width;
+    projectedVerts[i].y /= orthogonalScale; // * this.height) / this.width;
 
     projectedVerts[i].x =
       (projectedVerts[i].x * this.width) / 2 + this.width / 2;
@@ -268,18 +277,18 @@ Renderer.computeBoundingBox = function (projectedVerts) {
 
   // ----------- STUDENT CODE BEGIN ------------
   // ----------- Our reference solution uses 14 lines of code.
-  for(var i = 0; i<3;i++){
+  for (var i = 0; i < 3; i++) {
     let p = projectedVerts[i];
-    if(p.x<box.minX){
+    if (p.x < box.minX) {
       box.minX = p.x;
     }
-    if(p.y<box.minY){
+    if (p.y < box.minY) {
       box.minY = p.y;
     }
-    if(p.x>box.maxY){
+    if (p.x > box.maxY) {
       box.maxX = p.y;
     }
-    if(p.x>box.maxX){
+    if (p.x > box.maxX) {
       box.maxX = p.x;
     }
   }
@@ -293,7 +302,30 @@ Renderer.computeBarycentric = function (projectedVerts, x, y) {
   // (see https://fgiesen.wordpress.com/2013/02/06/the-barycentric-conspirac/)
   // return undefined if (x,y) is outside the triangle
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 15 lines of code.
+  const box = this.computeBoundingBox(projectedVerts);
+  if (x < box.minX || x > box.maxX || y < box.minY || y > box.maxY) {
+    return undefined;
+  }
+
+  // Compute barycentric coordinates for (x,y) with respect to the triangle
+  // defined in projectedVerts[0-2].
+  const alpha =
+    ((projectedVerts[1].y - projectedVerts[2].y) * (x - projectedVerts[2].x) +
+      (projectedVerts[2].x - projectedVerts[1].x) * (y - projectedVerts[2].y)) /
+    ((projectedVerts[1].y - projectedVerts[2].y) *
+      (projectedVerts[0].x - projectedVerts[2].x) +
+      (projectedVerts[2].x - projectedVerts[1].x) *
+        (projectedVerts[0].y - projectedVerts[2].y));
+  const beta =
+    ((projectedVerts[2].y - projectedVerts[0].y) * (x - projectedVerts[2].x) +
+      (projectedVerts[0].x - projectedVerts[2].x) * (y - projectedVerts[2].y)) /
+    ((projectedVerts[1].y - projectedVerts[2].y) *
+      (projectedVerts[0].x - projectedVerts[2].x) +
+      (projectedVerts[2].x - projectedVerts[1].x) *
+        (projectedVerts[0].y - projectedVerts[2].y));
+
+  triCoords = [alpha, beta, 1 - alpha - beta];
+
   // ----------- STUDENT CODE END ------------
   return triCoords;
 };
@@ -361,9 +393,33 @@ Renderer.drawTrianglePhong = function (
   // (3) XYZ normal mapping: If xyz normal texture exists for the material,
   //                         convert the RGB value of the XYZ normal texture at the uv coordinates
   //                         to a normal vector and apply it at the pixel location.
-  // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 62 lines of code.
-  // ----------- STUDENT CODE END ------------
+  for (var i = 0; i < 3; i++) {
+    var va = projectedVerts[(i + 1) % 3];
+    var vb = projectedVerts[(i + 2) % 3];
+    const na = normals[(i + 1) % 3];
+    const nb = normals[(i + 2) % 3];
+
+    const phongMaterial = this.getPhongMaterial(uvs, material);
+    const color = Reflection.phongReflectionModel(
+      va,
+      undefined,
+      na,
+      new THREE.Vector3(0, 1, 0),
+      phongMaterial
+    );
+
+    // Draw filled in triangle face with color
+
+    var ba = new THREE.Vector2(vb.x - va.x, vb.y - va.y);
+    var len_ab = ba.length();
+    ba.normalize();
+    // draw line
+    for (var j = 0; j < len_ab; j += 0.5) {
+      var x = Math.round(va.x + ba.x * j);
+      var y = Math.round(va.y + ba.y * j);
+      this.buffer.setPixel(x, y, color);
+    }
+  }
 };
 
 Renderer.drawTriangle = function (verts, normals, uvs, material, viewMat) {
