@@ -36,7 +36,9 @@ Reflection.phongReflectionModel = function (
 
   // ----------- STUDENT CODE END ------------
 
+  return new Pixel(1,1,1); //white for debugging
   return color;
+  
 };
 
 var Renderer = Renderer || {
@@ -340,7 +342,7 @@ Renderer.computeBarycentric = function (projectedVerts, x, y) {
     return undefined;
   }
 
-  triCoords = [alpha, beta, gamma];
+  triCoords = [gamma, alpha, beta];
 
   // ----------- STUDENT CODE END ------------
   return triCoords;
@@ -412,13 +414,17 @@ Renderer.drawTriangleFlat = function (
     for (let y = box.minY; y <= box.maxY; y++) {
       const triCoords = this.computeBarycentric(projectedVerts, x, y);
       if (triCoords) {
-        let z =
-          triCoords[0] * projectedVerts[0].z +
-          triCoords[1] * projectedVerts[1].z +
-          triCoords[2] * projectedVerts[2].z;
-        if (z > this.zBuffer[Math.round(x)][Math.round(y)]) {
-          this.buffer.setPixel(Math.round(x), Math.round(y), color);
-          this.zBuffer[Math.round(x)][Math.round(y)] = z;
+        let xx = Math.floor(x);
+        let yy = Math.floor(y);
+        if (xx < this.width && y < this.height) { //cliping
+          let z =
+            triCoords[0] * projectedVerts[0].z +
+            triCoords[1] * projectedVerts[1].z +
+            triCoords[2] * projectedVerts[2].z;
+          if (z > this.zBuffer[xx][yy]) {
+            this.buffer.setPixel(xx, yy, color);
+            this.zBuffer[xx][yy] = z;
+          }
         }
       }
     }
