@@ -36,7 +36,7 @@ Reflection.phongReflectionModel = function (
 
   // ----------- STUDENT CODE END ------------
 
-  return new Pixel(1,1,1); //white for debugging
+  return new Pixel(1,1,1,0.5) //white for debugging
   return color;
   
 };
