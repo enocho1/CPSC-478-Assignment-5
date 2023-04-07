@@ -313,8 +313,6 @@ Renderer.computeBarycentric = function (projectedVerts, x, y) {
 
   let beta = (y - a.y - alpha * (b.y - a.y)) / (c.y - a.y);
 
-  
-
   // let alpha =
   //   ((projectedVerts[1].y - projectedVerts[2].y) * (x - projectedVerts[2].x) +
   //     (projectedVerts[2].x - projectedVerts[1].x) * (y - projectedVerts[2].y)) /
@@ -414,7 +412,14 @@ Renderer.drawTriangleFlat = function (
     for (let y = box.minY; y <= box.maxY; y++) {
       const triCoords = this.computeBarycentric(projectedVerts, x, y);
       if (triCoords) {
-        this.buffer.setPixel(Math.round(x), Math.round(y), color);
+        let z =
+          triCoords[0] * projectedVerts[0].z +
+          triCoords[1] * projectedVerts[1].z +
+          triCoords[2] * projectedVerts[2].z;
+        if (z > this.zBuffer[Math.round(x)][Math.round(y)]) {
+          this.buffer.setPixel(Math.round(x), Math.round(y), color);
+          this.zBuffer[Math.round(x)][Math.round(y)] = z;
+        }
       }
     }
   }
