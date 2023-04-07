@@ -342,7 +342,7 @@ Renderer.computeBarycentric = function (projectedVerts, x, y) {
     return undefined;
   }
 
-  let triCoords = [alpha, beta, gamma];
+  triCoords = [alpha, beta, gamma];
 
   // ----------- STUDENT CODE END ------------
   return triCoords;
