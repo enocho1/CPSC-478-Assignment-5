@@ -299,24 +299,46 @@ Renderer.computeBarycentric = function (projectedVerts, x, y) {
     return undefined;
   }
 
+  let a = projectedVerts[0];
+  let b = projectedVerts[1];
+  let c = projectedVerts[2];
+
   // Compute barycentric coordinates for (x,y) with respect to the triangle
   // defined in projectedVerts[0-2].
   const alpha =
-    ((projectedVerts[1].y - projectedVerts[2].y) * (x - projectedVerts[2].x) +
-      (projectedVerts[2].x - projectedVerts[1].x) * (y - projectedVerts[2].y)) /
-    ((projectedVerts[1].y - projectedVerts[2].y) *
-      (projectedVerts[0].x - projectedVerts[2].x) +
-      (projectedVerts[2].x - projectedVerts[1].x) *
-        (projectedVerts[0].y - projectedVerts[2].y));
-  const beta =
-    ((projectedVerts[2].y - projectedVerts[0].y) * (x - projectedVerts[2].x) +
-      (projectedVerts[0].x - projectedVerts[2].x) * (y - projectedVerts[2].y)) /
-    ((projectedVerts[1].y - projectedVerts[2].y) *
-      (projectedVerts[0].x - projectedVerts[2].x) +
-      (projectedVerts[2].x - projectedVerts[1].x) *
-        (projectedVerts[0].y - projectedVerts[2].y));
+    (a.x * (c.y - a.y) + (y - a.y) * (c.x - a.x) - x * (c.y - a.y)) /
+    ((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
 
-  triCoords = [alpha, beta, 1 - alpha - beta];
+  const beta = (y - a.y - alpha * (b.y - a.y)) / (c.y - a.y);
+
+  const gamma = 1 - alpha - beta;
+
+  let upper_limit = Math.max(alpha, beta, gamma);
+  let lower_limit = Math.min(alpha, beta, gamma);
+
+  if (lower_limit < 0) {
+    return undefined;
+  }
+  if (upper_limit > 1) {
+    return undefined;
+  }
+
+  // let allp =
+  //   ((projectedVerts[1].y - projectedVerts[2].y) * (x - projectedVerts[2].x) +
+  //     (projectedVerts[2].x - projectedVerts[1].x) * (y - projectedVerts[2].y)) /
+  //   ((projectedVerts[1].y - projectedVerts[2].y) *
+  //     (projectedVerts[0].x - projectedVerts[2].x) +
+  //     (projectedVerts[2].x - projectedVerts[1].x) *
+  //       (projectedVerts[0].y - projectedVerts[2].y));
+  // const beta =
+  //   ((projectedVerts[2].y - projectedVerts[0].y) * (x - projectedVerts[2].x) +
+  //     (projectedVerts[0].x - projectedVerts[2].x) * (y - projectedVerts[2].y)) /
+  //   ((projectedVerts[1].y - projectedVerts[2].y) *
+  //     (projectedVerts[0].x - projectedVerts[2].x) +
+  //     (projectedVerts[2].x - projectedVerts[1].x) *
+  //       (projectedVerts[0].y - projectedVerts[2].y));
+
+  triCoords = [alpha, beta, gamma];
 
   // ----------- STUDENT CODE END ------------
   return triCoords;
