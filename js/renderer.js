@@ -36,9 +36,8 @@ Reflection.phongReflectionModel = function (
 
   // ----------- STUDENT CODE END ------------
 
-  return new Pixel(1,1,1,vertex.z) //white for debugging
-  return color;
-  
+  return new Pixel(1, 1, 1, vertex.z); //white for debugging
+  // return color;
 };
 
 var Renderer = Renderer || {
@@ -253,9 +252,11 @@ Renderer.projectVertices = function (verts, viewMat) {
 
     let orthogonalScale = projectedVerts[i].w;
 
+    // Normalize the projected vertices
     projectedVerts[i].x /= orthogonalScale;
-    projectedVerts[i].y /= orthogonalScale; // * this.height) / this.width;
+    projectedVerts[i].y /= orthogonalScale;
 
+    // Scale them to fit within the display
     projectedVerts[i].x =
       (projectedVerts[i].x * this.width) / 2 + this.width / 2;
     projectedVerts[i].y =
@@ -272,10 +273,10 @@ Renderer.computeBoundingBox = function (projectedVerts) {
   // to loop over pixel locations in the bounding box for rasterization.
 
   var box = {};
-  box.minX = 100000000;
-  box.minY = 100000000;
-  box.maxX = -100000000;
-  box.maxY = -100000000;
+  box.minX = this.width - 1;
+  box.minY = this.height - 1;
+  box.maxX = 0;
+  box.maxY = 0;
 
   // ----------- STUDENT CODE BEGIN ------------
   // ----------- Our reference solution uses 14 lines of code.
@@ -314,21 +315,6 @@ Renderer.computeBarycentric = function (projectedVerts, x, y) {
     ((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
 
   let beta = (y - a.y - alpha * (b.y - a.y)) / (c.y - a.y);
-
-  // let alpha =
-  //   ((projectedVerts[1].y - projectedVerts[2].y) * (x - projectedVerts[2].x) +
-  //     (projectedVerts[2].x - projectedVerts[1].x) * (y - projectedVerts[2].y)) /
-  //   ((projectedVerts[1].y - projectedVerts[2].y) *
-  //     (projectedVerts[0].x - projectedVerts[2].x) +
-  //     (projectedVerts[2].x - projectedVerts[1].x) *
-  //       (projectedVerts[0].y - projectedVerts[2].y));
-  // const beta =
-  //   ((projectedVerts[2].y - projectedVerts[0].y) * (x - projectedVerts[2].x) +
-  //     (projectedVerts[0].x - projectedVerts[2].x) * (y - projectedVerts[2].y)) /
-  //   ((projectedVerts[1].y - projectedVerts[2].y) *
-  //     (projectedVerts[0].x - projectedVerts[2].x) +
-  //     (projectedVerts[2].x - projectedVerts[1].x) *
-  //       (projectedVerts[0].y - projectedVerts[2].y));
 
   let gamma = 1 - alpha - beta;
 
@@ -399,6 +385,7 @@ Renderer.drawTriangleFlat = function (
     this.camera.projectionMatrix,
     this.camera.matrixWorldInverse
   );
+
   const phongMaterial = this.getPhongMaterial(uvs, material);
   const color = Reflection.phongReflectionModel(
     centroid,
@@ -410,21 +397,28 @@ Renderer.drawTriangleFlat = function (
 
   // Rasterize the triangle
   const box = this.computeBoundingBox(projectedVerts);
-  for (let x = box.minX; x <= box.maxX; x++) {
-    for (let y = box.minY; y <= box.maxY; y++) {
+
+  for (
+    let x = Math.max(box.minX, 0);
+    x <= Math.min(box.maxX, this.width - 1);
+    x++
+  ) {
+    for (
+      let y = Math.max(box.minY, 0);
+      y <= Math.min(box.maxY, this.height - 1);
+      y++
+    ) {
       const triCoords = this.computeBarycentric(projectedVerts, x, y);
       if (triCoords) {
         let xx = Math.floor(x);
         let yy = Math.floor(y);
-        if (xx < this.width && y < this.height) { //cliping
-          let z =
-            triCoords[0] * projectedVerts[0].z +
-            triCoords[1] * projectedVerts[1].z +
-            triCoords[2] * projectedVerts[2].z;
-          if (z > this.zBuffer[xx][yy]) {
-            this.buffer.setPixel(xx, yy, color);
-            this.zBuffer[xx][yy] = z;
-          }
+        let z =
+          triCoords[0] * projectedVerts[0].z +
+          triCoords[1] * projectedVerts[1].z +
+          triCoords[2] * projectedVerts[2].z;
+        if (z > this.zBuffer[xx][yy]) {
+          this.buffer.setPixel(xx, yy, color);
+          this.zBuffer[xx][yy] = z;
         }
       }
     }
