@@ -56,6 +56,7 @@ Reflection.phongReflectionModel = function (
   lightPos,
   phongMaterial
 ) {
+  // Using the built-in pixel type is so fucking awful so I use three instead
   const mat = {
     ambient: new THREE.Vector3(
       phongMaterial.ambient.r,
@@ -447,6 +448,8 @@ Renderer.drawTrianglePixels = function (
 
       // Compute barycentric coordinates for the pixel
       const p = new THREE.Vector2(x, y);
+
+      // Formula from https://gamedev.stackexchange.com/a/23743
       const alpha =
         ((v1.y - v2.y) * (p.x - v2.x) + (v2.x - v1.x) * (p.y - v2.y)) *
         invTriangleArea;
