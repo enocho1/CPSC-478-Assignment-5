@@ -6,6 +6,49 @@ var Reflection = Reflection || {
   shininess: 20,
 };
 
+function phongReflectionModelImpl(
+  vertex,
+  view,
+  normal,
+  lightPos,
+  phongMaterial
+) {
+  // Calculate the view direction
+  let viewDir = new THREE.Vector3()
+    .subVectors(new THREE.Vector3().setFromMatrixPosition(view), vertex)
+    .normalize();
+
+  // Calculate the light direction
+  var lightDir = new THREE.Vector3().subVectors(lightPos, vertex).normalize();
+  var ndotl = normal.dot(lightDir);
+
+  // Calculate the reflection direction
+  let reflectionDir = new THREE.Vector3().reflect(
+    lightDir.clone().negate(),
+    normal
+  );
+
+  // Calculate the ambient term
+  let ambient = new THREE.Vector3().copy(phongMaterial.ambient);
+
+  // Calculate the diffuse term
+  let diffuse = new THREE.Vector3()
+    .copy(phongMaterial.diffuse)
+    .multiplyScalar(ndotl);
+
+  // Calculate the specular term
+  let specular = phongMaterial.specular
+    .clone()
+    .multiplyScalar(
+      Math.pow(Math.max(reflectionDir.dot(viewDir), 0), phongMaterial.shininess)
+    );
+
+  // Add the ambient, diffuse, and specular terms together
+  let color = new THREE.Vector3().addVectors(ambient, diffuse).add(specular);
+
+  return new Pixel(color.x, color.y, color.z);
+}
+
 Reflection.phongReflectionModel = function (
   vertex,
   view,
@@ -13,31 +56,25 @@ Reflection.phongReflectionModel = function (
   lightPos,
   phongMaterial
 ) {
-  var color = new Pixel(0, 0, 0);
-  normal.normalize();
-
-  // diffuse
-  var light_dir = new THREE.Vector3().subVectors(lightPos, vertex).normalize();
-  var ndotl = normal.dot(light_dir);
-  color.plus(phongMaterial.diffuse.copy().multipliedBy(ndotl));
-
-  // Ambient color and specular color
-  // ----------- STUDENT CODE BEGIN ------------
-  const ambient = phongMaterial.ambient;
-
-  // Ambient color
-  color.plus(ambient);
-
-  // Specular color
-  const specular = phongMaterial.specular.multipliedBy(
-    Math.pow(ndotl, phongMaterial.shininess)
-  );
-  color.plus(specular);
-
-  // ----------- STUDENT CODE END ------------
-
-  return new Pixel(1, 1, 1, vertex.z); //white for debugging
-  // return color;
+  const mat = {
+    ambient: new THREE.Vector3(
+      phongMaterial.ambient.r,
+      phongMaterial.ambient.g,
+      phongMaterial.ambient.b
+    ),
+    diffuse: new THREE.Vector3(
+      phongMaterial.diffuse.r,
+      phongMaterial.diffuse.g,
+      phongMaterial.diffuse.b
+    ),
+    specular: new THREE.Vector3(
+      phongMaterial.specular.r,
+      phongMaterial.specular.g,
+      phongMaterial.specular.b
+    ),
+    shininess: phongMaterial.shininess,
+  };
+  return phongReflectionModelImpl(vertex, view, normal, lightPos, mat);
 };
 
 var Renderer = Renderer || {
@@ -306,29 +343,56 @@ Renderer.computeBarycentric = function (projectedVerts, x, y) {
   let b = projectedVerts[1];
   let c = projectedVerts[2];
 
-  // Compute barycentric coordinates for (x,y) with respect to the triangle
-  // defined in projectedVerts[0-2].
+  const determinant = (v0, v1) => v0.x * v1.y - v0.y * v1.x;
+  const scaledTriangleArea = (v0, v1, v2) =>
+    determinant(v1.clone().sub(v0), v2.clone().sub(v0));
 
-  // this is equivalent to your original one, just abit shorter. @enoch
-  let alpha =
-    (a.x * (c.y - a.y) + (y - a.y) * (c.x - a.x) - x * (c.y - a.y)) /
-    ((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
+  const edgeFn = (v0, v1, p) =>
+    (v1.x - v0.x) * (p.y - v0.y) - (v1.y - v0.y) * (p.x - v0.x);
 
-  let beta = (y - a.y - alpha * (b.y - a.y)) / (c.y - a.y);
+  const p = new THREE.Vector2(x, y);
+  const area = scaledTriangleArea(a, b, c);
+  const l0 = edgeFn(b, c, p) / area;
+  const l1 = edgeFn(c, a, p) / area;
+  const l2 = edgeFn(a, b, p) / area;
 
-  let gamma = 1 - alpha - beta;
+  let upper_limit = Math.max(l0, l1, l2);
+  let lower_limit = Math.min(l0, l1, l2);
 
-  let upper_limit = Math.max(alpha, beta, gamma);
-  let lower_limit = Math.min(alpha, beta, gamma);
-
+  // Do a check to see if we are inside or outside of the triangle
   if (lower_limit < 0) {
     return undefined;
   }
+
   if (upper_limit > 1) {
     return undefined;
   }
 
-  triCoords = [gamma, alpha, beta];
+  return [l0, l1, l2];
+
+  // Compute barycentric coordinates for (x,y) with respect to the triangle
+  // defined in projectedVerts[0-2].
+
+  // this is equivalent to your original one, just abit shorter. @enoch
+  // let alpha =
+  //   (a.x * (c.y - a.y) + (y - a.y) * (c.x - a.x) - x * (c.y - a.y)) /
+  //   ((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
+
+  // let beta = (y - a.y - alpha * (b.y - a.y)) / (c.y - a.y);
+
+  // let gamma = 1 - alpha - beta;
+
+  // let upper_limit = Math.max(alpha, beta, gamma);
+  // let lower_limit = Math.min(alpha, beta, gamma);
+
+  // if (lower_limit < 0) {
+  //   return undefined;
+  // }
+  // if (upper_limit > 1) {
+  //   return undefined;
+  // }
+
+  // triCoords = [gamma, alpha, beta];
 
   // ----------- STUDENT CODE END ------------
   return triCoords;
@@ -348,6 +412,64 @@ Renderer.drawTriangleWire = function (projectedVerts) {
       var x = Math.round(va.x + ba.x * j);
       var y = Math.round(va.y + ba.y * j);
       this.buffer.setPixel(x, y, color);
+    }
+  }
+};
+
+Renderer.drawTrianglePixels = function (
+  verts,
+  projectedVerts,
+  windowWidth,
+  windowHeight,
+  color
+) {
+  // Compute barycentric coordinates for the triangle
+  const v0 = projectedVerts[0];
+  const v1 = projectedVerts[1];
+  const v2 = projectedVerts[2];
+  const triangleArea = Math.abs(
+    (v1.x - v0.x) * (v2.y - v0.y) - (v2.x - v0.x) * (v1.y - v0.y)
+  );
+  const invTriangleArea = 1 / triangleArea;
+
+  // Iterate over the bounding box of the triangle
+  const minX = Math.floor(Math.min(v0.x, v1.x, v2.x));
+  const maxX = Math.ceil(Math.max(v0.x, v1.x, v2.x));
+  const minY = Math.floor(Math.min(v0.y, v1.y, v2.y));
+  const maxY = Math.ceil(Math.max(v0.y, v1.y, v2.y));
+
+  for (let x = minX; x <= maxX; x++) {
+    for (let y = minY; y <= maxY; y++) {
+      // Check if pixel is within the screen
+      if (x < 0 || x >= windowWidth || y < 0 || y >= windowHeight) {
+        continue;
+      }
+
+      // Compute barycentric coordinates for the pixel
+      const p = new THREE.Vector2(x, y);
+      const alpha =
+        ((v1.y - v2.y) * (p.x - v2.x) + (v2.x - v1.x) * (p.y - v2.y)) *
+        invTriangleArea;
+      const beta =
+        ((v2.y - v0.y) * (p.x - v2.x) + (v0.x - v2.x) * (p.y - v2.y)) *
+        invTriangleArea;
+      const gamma = 1 - alpha - beta;
+
+      // Check if pixel is inside the triangle
+      if (alpha >= 0 && beta >= 0 && gamma >= 0) {
+        // Compute depth value for the pixel
+        const depth =
+          alpha * verts[0].z + beta * verts[1].z + gamma * verts[2].z;
+
+        // Check if pixel is closer than the current depth value
+        if (depth < this.zBuffer[x][y]) {
+          // Set pixel color
+          this.buffer.setPixel(x, y, color);
+
+          // Update z-buffer
+          this.zBuffer[x][y] = depth;
+        }
+      }
     }
   }
 };
@@ -396,33 +518,13 @@ Renderer.drawTriangleFlat = function (
   );
 
   // Rasterize the triangle
-  const box = this.computeBoundingBox(projectedVerts);
-
-  for (
-    let x = Math.max(box.minX, 0);
-    x <= Math.min(box.maxX, this.width - 1);
-    x++
-  ) {
-    for (
-      let y = Math.max(box.minY, 0);
-      y <= Math.min(box.maxY, this.height - 1);
-      y++
-    ) {
-      const triCoords = this.computeBarycentric(projectedVerts, x, y);
-      if (triCoords) {
-        let xx = Math.floor(x);
-        let yy = Math.floor(y);
-        let z =
-          triCoords[0] * projectedVerts[0].z +
-          triCoords[1] * projectedVerts[1].z +
-          triCoords[2] * projectedVerts[2].z;
-        if (z > this.zBuffer[xx][yy]) {
-          this.buffer.setPixel(xx, yy, color);
-          this.zBuffer[xx][yy] = z;
-        }
-      }
-    }
-  }
+  this.drawTrianglePixels(
+    verts,
+    projectedVerts,
+    this.width,
+    this.height,
+    color
+  );
 };
 
 Renderer.drawTriangleGouraud = function (
