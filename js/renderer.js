@@ -44,7 +44,6 @@ function phongReflectionModelImpl(
   let color = new THREE.Vector3().addVectors(ambient, diffuse).add(specular);
 
   return new Pixel(color.x, color.y, color.z);
-  // return new Pixel(1, 1, 1);
 }
 
 Reflection.phongReflectionModel = function (
@@ -432,10 +431,13 @@ Renderer.drawTrianglePixels = function (
   const invTriangleArea = 1 / triangleArea;
 
   // Iterate over the bounding box of the triangle
-  const minX = Math.floor(Math.min(v0.x, v1.x, v2.x));
-  const maxX = Math.ceil(Math.max(v0.x, v1.x, v2.x));
-  const minY = Math.floor(Math.min(v0.y, v1.y, v2.y));
-  const maxY = Math.ceil(Math.max(v0.y, v1.y, v2.y));
+  const box = this.computeBoundingBox(projectedVerts);
+  let { minX, maxX, minY, maxY } = box;
+
+  minX = Math.floor(Math.max(minX, 0));
+  maxX = Math.floor(Math.min(maxX, windowWidth - 1));
+  minY = Math.floor(Math.max(minY, 0));
+  maxY = Math.floor(Math.min(maxY, windowHeight - 1));
 
   for (let x = minX; x <= maxX; x++) {
     for (let y = minY; y <= maxY; y++) {
@@ -444,35 +446,15 @@ Renderer.drawTrianglePixels = function (
         continue;
       }
 
-      // Compute barycentric coordinates for the pixel
-      const p = new THREE.Vector2(x, y);
-
-      // Formula from https://gamedev.stackexchange.com/a/23743
-      const alpha =
-        ((v1.y - v2.y) * (p.x - v2.x) + (v2.x - v1.x) * (p.y - v2.y)) *
-        invTriangleArea;
-      const beta =
-        ((v2.y - v0.y) * (p.x - v2.x) + (v0.x - v2.x) * (p.y - v2.y)) *
-        invTriangleArea;
-      const gamma = 1 - alpha - beta;
-
-      if (alpha > 1) {
-        continue;
-      }
-
-      if (beta > 1) {
-        continue;
-      }
-
-      if (gamma > 1) {
-        continue;
-      }
+      const bary = this.computeBarycentric(projectedVerts, x, y);
 
       // Check if pixel is inside the triangle
-      if (alpha >= 0 && beta >= 0 && gamma >= 0) {
+      if (bary) {
         // Compute depth value for the pixel
         const depth =
-          alpha * verts[0].z + beta * verts[1].z + gamma * verts[2].z;
+          (bary[0] / projectedVerts[0].w) * verts[0].z +
+          (bary[1] / projectedVerts[1].w) * verts[1].z +
+          (bary[2] / projectedVerts[2].w) * verts[2].z;
 
         // Check if pixel is closer than the current depth value
         if (depth < this.zBuffer[x][y]) {
@@ -513,7 +495,7 @@ Renderer.drawTriangleFlat = function (
   centroid.add(v1);
   centroid.add(v2);
   centroid.add(v3);
-  centroid.divideScalar(3);
+  centroid.divideScalar(3.0);
 
   // Compute the color of the face
   const viewMat = new THREE.Matrix4().multiplyMatrices(
