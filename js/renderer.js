@@ -23,18 +23,15 @@ function phongReflectionModelImpl(
   var ndotl = normal.dot(lightDir);
 
   // Calculate the reflection direction
-  let reflectionDir = new THREE.Vector3().reflect(
-    lightDir.clone().negate(),
-    normal
-  );
+  let reflectionDir = lightDir.clone().negate().reflect(normal);
 
   // Calculate the ambient term
   let ambient = new THREE.Vector3().copy(phongMaterial.ambient);
 
   // Calculate the diffuse term
-  let diffuse = new THREE.Vector3()
+  const diffuse = new THREE.Vector3()
     .copy(phongMaterial.diffuse)
-    .multiplyScalar(ndotl);
+    .multiplyScalar(Math.abs(ndotl));
 
   // Calculate the specular term
   let specular = phongMaterial.specular
@@ -47,6 +44,7 @@ function phongReflectionModelImpl(
   let color = new THREE.Vector3().addVectors(ambient, diffuse).add(specular);
 
   return new Pixel(color.x, color.y, color.z);
+  // return new Pixel(1, 1, 1);
 }
 
 Reflection.phongReflectionModel = function (
@@ -457,6 +455,18 @@ Renderer.drawTrianglePixels = function (
         ((v2.y - v0.y) * (p.x - v2.x) + (v0.x - v2.x) * (p.y - v2.y)) *
         invTriangleArea;
       const gamma = 1 - alpha - beta;
+
+      if (alpha > 1) {
+        continue;
+      }
+
+      if (beta > 1) {
+        continue;
+      }
+
+      if (gamma > 1) {
+        continue;
+      }
 
       // Check if pixel is inside the triangle
       if (alpha >= 0 && beta >= 0 && gamma >= 0) {
