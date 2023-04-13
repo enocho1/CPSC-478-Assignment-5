@@ -43,7 +43,6 @@ function phongReflectionModelImpl(
   // Add the ambient, diffuse, and specular terms together
   let color = new THREE.Vector3().addVectors(ambient, diffuse).add(specular);
 
-  // return new Pixel(1, 1, 1);
   return new Pixel(color.x, color.y, color.z);
 }
 
@@ -54,7 +53,6 @@ Reflection.phongReflectionModel = function (
   lightPos,
   phongMaterial
 ) {
-  // Using the built-in pixel type is so fucking awful so I use three instead
   const mat = {
     ambient: new THREE.Vector3(
       phongMaterial.ambient.r,
