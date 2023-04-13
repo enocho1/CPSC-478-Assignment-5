@@ -488,7 +488,10 @@ Renderer.drawTriangleFlat = function (
           .add(uv2.clone().multiplyScalar(beta))
           .add(uv3.clone().multiplyScalar(gamma));
 
-        const phongMaterial = this.getPhongMaterial(interpolatedUV, material);
+        const phongMaterial =
+          uvs === undefined
+            ? this.getPhongMaterial(uvs, material)
+            : this.getPhongMaterial(interpolatedUV, material);
         const color = Reflection.phongReflectionModel(
           centroid,
           viewMat,
@@ -584,7 +587,10 @@ Renderer.drawTriangleGouraud = function (
           .add(uv2.clone().multiplyScalar(beta))
           .add(uv3.clone().multiplyScalar(gamma));
 
-        const phongMaterial = this.getPhongMaterial(interpolatedUV, material);
+        const phongMaterial =
+          uvs === undefined
+            ? this.getPhongMaterial(uvs, material)
+            : this.getPhongMaterial(interpolatedUV, material);
         const c1 = Reflection.phongReflectionModel(
           v1,
           viewMat,
@@ -719,7 +725,10 @@ Renderer.drawTrianglePhong = function (
           .add(n2.clone().multiplyScalar(beta))
           .add(n3.clone().multiplyScalar(gamma));
 
-        const phongMaterial = this.getPhongMaterial(interpolatedUV, material);
+        const phongMaterial =
+          uvs === undefined
+            ? this.getPhongMaterial(uvs, material)
+            : this.getPhongMaterial(interpolatedUV, material);
 
         const color = Reflection.phongReflectionModel(
           interpolatedVertex,
