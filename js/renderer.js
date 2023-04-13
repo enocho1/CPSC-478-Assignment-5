@@ -43,6 +43,7 @@ function phongReflectionModelImpl(
   // Add the ambient, diffuse, and specular terms together
   let color = new THREE.Vector3().addVectors(ambient, diffuse).add(specular);
 
+  // return new Pixel(1, 1, 1);
   return new Pixel(color.x, color.y, color.z);
 }
 
@@ -422,15 +423,6 @@ Renderer.drawTrianglePixels = function (
   color
 ) {
   // Compute barycentric coordinates for the triangle
-  const v0 = projectedVerts[0];
-  const v1 = projectedVerts[1];
-  const v2 = projectedVerts[2];
-  const triangleArea = Math.abs(
-    (v1.x - v0.x) * (v2.y - v0.y) - (v2.x - v0.x) * (v1.y - v0.y)
-  );
-  const invTriangleArea = 1 / triangleArea;
-
-  // Iterate over the bounding box of the triangle
   const box = this.computeBoundingBox(projectedVerts);
   let { minX, maxX, minY, maxY } = box;
 
@@ -439,6 +431,7 @@ Renderer.drawTrianglePixels = function (
   minY = Math.floor(Math.max(minY, 0));
   maxY = Math.floor(Math.min(maxY, windowHeight - 1));
 
+  // Iterate over the bounding box of the triangle
   for (let x = minX; x <= maxX; x++) {
     for (let y = minY; y <= maxY; y++) {
       // Check if pixel is within the screen
@@ -452,9 +445,9 @@ Renderer.drawTrianglePixels = function (
       if (bary) {
         // Compute depth value for the pixel
         const depth =
-          (bary[0] / projectedVerts[0].w) * verts[0].z +
-          (bary[1] / projectedVerts[1].w) * verts[1].z +
-          (bary[2] / projectedVerts[2].w) * verts[2].z;
+          (bary[0] / projectedVerts[0].w) * projectedVerts[0].z +
+          (bary[1] / projectedVerts[1].w) * projectedVerts[1].z +
+          (bary[2] / projectedVerts[2].w) * projectedVerts[2].z;
 
         // Check if pixel is closer than the current depth value
         if (depth < this.zBuffer[x][y]) {
