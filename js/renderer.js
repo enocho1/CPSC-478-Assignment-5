@@ -366,33 +366,6 @@ Renderer.computeBarycentric = function (projectedVerts, x, y) {
   }
 
   return [l0, l1, l2];
-
-  // Compute barycentric coordinates for (x,y) with respect to the triangle
-  // defined in projectedVerts[0-2].
-
-  // this is equivalent to your original one, just abit shorter. @enoch
-  // let alpha =
-  //   (a.x * (c.y - a.y) + (y - a.y) * (c.x - a.x) - x * (c.y - a.y)) /
-  //   ((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
-
-  // let beta = (y - a.y - alpha * (b.y - a.y)) / (c.y - a.y);
-
-  // let gamma = 1 - alpha - beta;
-
-  // let upper_limit = Math.max(alpha, beta, gamma);
-  // let lower_limit = Math.min(alpha, beta, gamma);
-
-  // if (lower_limit < 0) {
-  //   return undefined;
-  // }
-  // if (upper_limit > 1) {
-  //   return undefined;
-  // }
-
-  // triCoords = [gamma, alpha, beta];
-
-  // ----------- STUDENT CODE END ------------
-  return triCoords;
 };
 
 Renderer.drawTriangleWire = function (projectedVerts) {
@@ -412,14 +385,6 @@ Renderer.drawTriangleWire = function (projectedVerts) {
     }
   }
 };
-
-Renderer.drawTrianglePixels = function (
-  verts,
-  projectedVerts,
-  windowWidth,
-  windowHeight,
-  color
-) {};
 
 Renderer.drawTriangleFlat = function (
   verts,
