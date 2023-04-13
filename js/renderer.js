@@ -419,46 +419,7 @@ Renderer.drawTrianglePixels = function (
   windowWidth,
   windowHeight,
   color
-) {
-  // Compute barycentric coordinates for the triangle
-  const box = this.computeBoundingBox(projectedVerts);
-  let { minX, maxX, minY, maxY } = box;
-
-  minX = Math.floor(Math.max(minX, 0));
-  maxX = Math.floor(Math.min(maxX, windowWidth - 1));
-  minY = Math.floor(Math.max(minY, 0));
-  maxY = Math.floor(Math.min(maxY, windowHeight - 1));
-
-  // Iterate over the bounding box of the triangle
-  for (let x = minX; x <= maxX; x++) {
-    for (let y = minY; y <= maxY; y++) {
-      // Check if pixel is within the screen
-      if (x < 0 || x >= windowWidth || y < 0 || y >= windowHeight) {
-        continue;
-      }
-
-      const bary = this.computeBarycentric(projectedVerts, x, y);
-
-      // Check if pixel is inside the triangle
-      if (bary) {
-        // Compute depth value for the pixel
-        const depth =
-          (bary[0] / projectedVerts[0].w) * projectedVerts[0].z +
-          (bary[1] / projectedVerts[1].w) * projectedVerts[1].z +
-          (bary[2] / projectedVerts[2].w) * projectedVerts[2].z;
-
-        // Check if pixel is closer than the current depth value
-        if (depth < this.zBuffer[x][y]) {
-          // Set pixel color
-          this.buffer.setPixel(x, y, color);
-
-          // Update z-buffer
-          this.zBuffer[x][y] = depth;
-        }
-      }
-    }
-  }
-};
+) {};
 
 Renderer.drawTriangleFlat = function (
   verts,
@@ -494,23 +455,65 @@ Renderer.drawTriangleFlat = function (
     this.camera.matrixWorldInverse
   );
 
-  const phongMaterial = this.getPhongMaterial(uvs, material);
-  const color = Reflection.phongReflectionModel(
-    centroid,
-    viewMat,
-    n,
-    this.lightPos,
-    phongMaterial
-  );
+  const uv1 = uvs[0];
+  const uv2 = uvs[1];
+  const uv3 = uvs[2];
 
   // Rasterize the triangle
-  this.drawTrianglePixels(
-    verts,
-    projectedVerts,
-    this.width,
-    this.height,
-    color
-  );
+  // Compute barycentric coordinates for the triangle
+  const box = this.computeBoundingBox(projectedVerts);
+  let { minX, maxX, minY, maxY } = box;
+
+  minX = Math.floor(Math.max(minX, 0));
+  maxX = Math.floor(Math.min(maxX, this.width - 1));
+  minY = Math.floor(Math.max(minY, 0));
+  maxY = Math.floor(Math.min(maxY, this.height - 1));
+
+  // Iterate over the bounding box of the triangle
+  for (let x = minX; x <= maxX; x++) {
+    for (let y = minY; y <= maxY; y++) {
+      // Check if pixel is within the screen
+      if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+        continue;
+      }
+
+      const bary = this.computeBarycentric(projectedVerts, x, y);
+
+      // Check if pixel is inside the triangle
+      if (bary) {
+        const [alpha, beta, gamma] = bary;
+        const interpolatedUV = uv1
+          .clone()
+          .multiplyScalar(alpha)
+          .add(uv2.clone().multiplyScalar(beta))
+          .add(uv3.clone().multiplyScalar(gamma));
+
+        const phongMaterial = this.getPhongMaterial(interpolatedUV, material);
+        const color = Reflection.phongReflectionModel(
+          centroid,
+          viewMat,
+          n,
+          this.lightPos,
+          phongMaterial
+        );
+
+        // Compute depth value for the pixel
+        const depth =
+          (bary[0] / projectedVerts[0].w) * projectedVerts[0].z +
+          (bary[1] / projectedVerts[1].w) * projectedVerts[1].z +
+          (bary[2] / projectedVerts[2].w) * projectedVerts[2].z;
+
+        // Check if pixel is closer than the current depth value
+        if (depth < this.zBuffer[x][y]) {
+          // Set pixel color
+          this.buffer.setPixel(x, y, color);
+
+          // Update z-buffer
+          this.zBuffer[x][y] = depth;
+        }
+      }
+    }
+  }
 };
 
 Renderer.drawTriangleGouraud = function (
@@ -535,35 +538,14 @@ Renderer.drawTriangleGouraud = function (
   const v2 = verts[1];
   const v3 = verts[2];
 
+  const uv1 = uvs[0];
+  const uv2 = uvs[1];
+  const uv3 = uvs[2];
+
   // Compute the color of the face
   const viewMat = new THREE.Matrix4().multiplyMatrices(
     this.camera.projectionMatrix,
     this.camera.matrixWorldInverse
-  );
-
-  const phongMaterial = this.getPhongMaterial(uvs, material);
-  const c1 = Reflection.phongReflectionModel(
-    v1,
-    viewMat,
-    n1,
-    this.lightPos,
-    phongMaterial
-  );
-
-  const c2 = Reflection.phongReflectionModel(
-    v2,
-    viewMat,
-    n2,
-    this.lightPos,
-    phongMaterial
-  );
-
-  const c3 = Reflection.phongReflectionModel(
-    v3,
-    viewMat,
-    n3,
-    this.lightPos,
-    phongMaterial
   );
 
   // Rasterize the triangle
@@ -595,6 +577,37 @@ Renderer.drawTriangleGouraud = function (
           (bary[2] / projectedVerts[2].w) * projectedVerts[2].z;
 
         const [alpha, beta, gamma] = bary;
+
+        const interpolatedUV = uv1
+          .clone()
+          .multiplyScalar(alpha)
+          .add(uv2.clone().multiplyScalar(beta))
+          .add(uv3.clone().multiplyScalar(gamma));
+
+        const phongMaterial = this.getPhongMaterial(interpolatedUV, material);
+        const c1 = Reflection.phongReflectionModel(
+          v1,
+          viewMat,
+          n1,
+          this.lightPos,
+          phongMaterial
+        );
+
+        const c2 = Reflection.phongReflectionModel(
+          v2,
+          viewMat,
+          n2,
+          this.lightPos,
+          phongMaterial
+        );
+
+        const c3 = Reflection.phongReflectionModel(
+          v3,
+          viewMat,
+          n3,
+          this.lightPos,
+          phongMaterial
+        );
 
         const interpolatedColor = c1
           .copy()
