@@ -647,13 +647,17 @@ Renderer.drawTrianglePhong = function (
   const v2 = verts[1];
   const v3 = verts[2];
 
+  const uv1 = uvs[0];
+  const uv2 = uvs[1];
+  const uv3 = uvs[2];
+
   // Compute the color of the face
   const viewMat = new THREE.Matrix4().multiplyMatrices(
     this.camera.projectionMatrix,
     this.camera.matrixWorldInverse
   );
 
-  const phongMaterial = this.getPhongMaterial(uvs, material);
+  // const phongMaterial = this.getPhongMaterial(uvs, material);
   // Rasterize the triangle
   // Compute barycentric coordinates for the triangle
   const box = this.computeBoundingBox(projectedVerts);
@@ -684,6 +688,12 @@ Renderer.drawTrianglePhong = function (
 
         const [alpha, beta, gamma] = bary;
 
+        const interpolatedUV = uv1
+          .clone()
+          .multiplyScalar(alpha)
+          .add(uv2.clone().multiplyScalar(beta))
+          .add(uv3.clone().multiplyScalar(gamma));
+
         const interpolatedVertex = v1
           .clone()
           .multiplyScalar(alpha)
@@ -695,6 +705,8 @@ Renderer.drawTrianglePhong = function (
           .multiplyScalar(alpha)
           .add(n2.clone().multiplyScalar(beta))
           .add(n3.clone().multiplyScalar(gamma));
+
+        const phongMaterial = this.getPhongMaterial(interpolatedUV, material);
 
         const color = Reflection.phongReflectionModel(
           interpolatedVertex,
