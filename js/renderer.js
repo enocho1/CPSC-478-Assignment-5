@@ -522,30 +522,6 @@ Renderer.drawTriangleGouraud = function (
 ) {
   // Gouraud shader
   // Interpolate the color for each pixel in the triangle using the barycentric coordinate.
-  // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 49 lines of code.
-  // ----------- STUDENT CODE END ------------
-};
-
-Renderer.drawTrianglePhong = function (
-  verts,
-  projectedVerts,
-  normals,
-  uvs,
-  material
-) {
-  // Phong shader
-  // (1) Basic Phong shader: Interpolate the normal and vertex for each pixel in the triangle
-  //                         using the barycentric coordinate.
-  // (2) Texture mapping: If uvs is provided, compute interpolated uv coordinates
-  //                      and map the phong material texture (if available)
-  //                      at the uv coordinates to the pixel location.
-  // (3) XYZ normal mapping: If xyz normal texture exists for the material,
-  //                         convert the RGB value of the XYZ normal texture at the uv coordinates
-  //                         to a normal vector and apply it at the pixel location.
-  // Flat shader
-  // Color of each face is computed based on the face normal
-  // (average of vertex normals) and face centroid.
   const n1 = normals[0];
   const n2 = normals[1];
   const n3 = normals[2];
@@ -630,6 +606,108 @@ Renderer.drawTrianglePhong = function (
         if (depth < this.zBuffer[x][y]) {
           // Set pixel color
           this.buffer.setPixel(x, y, interpolatedColor);
+
+          // Update z-buffer
+          this.zBuffer[x][y] = depth;
+        }
+      }
+    }
+  }
+};
+
+Renderer.drawTrianglePhong = function (
+  verts,
+  projectedVerts,
+  normals,
+  uvs,
+  material
+) {
+  // Phong shader
+  // (1) Basic Phong shader: Interpolate the normal and vertex for each pixel in the triangle
+  //                         using the barycentric coordinate.
+  // (2) Texture mapping: If uvs is provided, compute interpolated uv coordinates
+  //                      and map the phong material texture (if available)
+  //                      at the uv coordinates to the pixel location.
+  // (3) XYZ normal mapping: If xyz normal texture exists for the material,
+  //                         convert the RGB value of the XYZ normal texture at the uv coordinates
+  //                         to a normal vector and apply it at the pixel location.
+  // Flat shader
+  // Color of each face is computed based on the face normal
+  // (average of vertex normals) and face centroid.
+  const n1 = normals[0];
+  const n2 = normals[1];
+  const n3 = normals[2];
+
+  // Compute the face normal and centroid
+  const n = new THREE.Vector3();
+  n.crossVectors(n2.clone().sub(n1), n3.clone().sub(n1));
+  n.normalize();
+
+  const v1 = verts[0];
+  const v2 = verts[1];
+  const v3 = verts[2];
+
+  // Compute the color of the face
+  const viewMat = new THREE.Matrix4().multiplyMatrices(
+    this.camera.projectionMatrix,
+    this.camera.matrixWorldInverse
+  );
+
+  const phongMaterial = this.getPhongMaterial(uvs, material);
+  // Rasterize the triangle
+  // Compute barycentric coordinates for the triangle
+  const box = this.computeBoundingBox(projectedVerts);
+  let { minX, maxX, minY, maxY } = box;
+
+  minX = Math.floor(Math.max(minX, 0));
+  maxX = Math.floor(Math.min(maxX, this.width - 1));
+  minY = Math.floor(Math.max(minY, 0));
+  maxY = Math.floor(Math.min(maxY, this.height - 1));
+
+  // Iterate over the bounding box of the triangle
+  for (let x = minX; x <= maxX; x++) {
+    for (let y = minY; y <= maxY; y++) {
+      // Check if pixel is within the screen
+      if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+        continue;
+      }
+
+      const bary = this.computeBarycentric(projectedVerts, x, y);
+
+      // Check if pixel is inside the triangle
+      if (bary) {
+        // Compute depth value for the pixel
+        const depth =
+          (bary[0] / projectedVerts[0].w) * projectedVerts[0].z +
+          (bary[1] / projectedVerts[1].w) * projectedVerts[1].z +
+          (bary[2] / projectedVerts[2].w) * projectedVerts[2].z;
+
+        const [alpha, beta, gamma] = bary;
+
+        const interpolatedVertex = v1
+          .clone()
+          .multiplyScalar(alpha)
+          .add(v2.clone().multiplyScalar(beta))
+          .add(v3.clone().multiplyScalar(gamma));
+
+        const interpolatedNormal = n1
+          .clone()
+          .multiplyScalar(alpha)
+          .add(n2.clone().multiplyScalar(beta))
+          .add(n3.clone().multiplyScalar(gamma));
+
+        const color = Reflection.phongReflectionModel(
+          interpolatedVertex,
+          viewMat,
+          interpolatedNormal,
+          this.lightPos,
+          phongMaterial
+        );
+
+        // Check if pixel is closer than the current depth value
+        if (depth < this.zBuffer[x][y]) {
+          // Set pixel color
+          this.buffer.setPixel(x, y, color);
 
           // Update z-buffer
           this.zBuffer[x][y] = depth;
