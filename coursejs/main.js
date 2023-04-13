@@ -19,7 +19,7 @@ function Mesh() {
   this.filename = undefined;
 }
 
-Mesh.prototype.computeVertexNormals = function() {
+Mesh.prototype.computeVertexNormals = function () {
   for (var i = 0; i < this.vertices.length; i++) {
     this.vertex_normals.push(new THREE.Vector3(0.0, 0.0, 0.0));
   }
@@ -42,7 +42,7 @@ Mesh.prototype.computeVertexNormals = function() {
   }
 };
 
-Main.getMesh = function(filename) {
+Main.getMesh = function (filename) {
   var newMesh = new Mesh();
 
   var filePath = "obj/" + filename; // all obj files are in the obj folder
@@ -50,8 +50,10 @@ Main.getMesh = function(filename) {
   var manager = new THREE.LoadingManager();
   var loader = new THREE.OBJLoader(manager);
 
-  loader.load(filePath, function(object) {
-    var geometry = new THREE.Geometry().fromBufferGeometry(object.children[0].geometry);
+  loader.load(filePath, function (object) {
+    var geometry = new THREE.Geometry().fromBufferGeometry(
+      object.children[0].geometry
+    );
     geometry.mergeVertices(); // otherwise we have duplicated vertices
     newMesh.vertices = geometry.vertices;
     newMesh.faces = geometry.faces;
@@ -67,12 +69,12 @@ Main.getMesh = function(filename) {
   return newMesh;
 };
 
-Main.getTexture = function(filename) {
+Main.getTexture = function (filename) {
   var imageObj = new Image(0, 0, []);
   var filePath = "textures/" + filename;
   var image = document.createElement("img");
 
-  image.onload = function() {
+  image.onload = function () {
     var canvas = document.createElement("canvas");
     var context = canvas.getContext("2d");
     canvas.width = image.width;
@@ -95,7 +97,7 @@ Main.getTexture = function(filename) {
 };
 
 function MeshInstance(filename, useMaterial) {
-  Main.itemsToLoad = 4;
+  Main.itemsToLoad += 4;
   this.mesh = filename !== undefined ? Main.getMesh(filename) : undefined;
 
   this.material = {};
@@ -154,17 +156,18 @@ function MeshInstance(filename, useMaterial) {
 }
 
 // when HTML is finished loading, do this
-window.onload = function() {
+window.onload = function () {
   Student.updateHTML();
 
   Main.canvas = document.getElementById("canvas");
   Main.context = canvas.getContext("2d");
 
   Renderer.initialize();
-  Gui.init();
+  // Gui.init();
 
   // load new mesh
   Main.controls = new THREE.TrackballControls(Renderer.camera, Main.canvas);
+  Gui.init();
 
   function snapShot() {
     // get the image data
@@ -175,11 +178,14 @@ window.onload = function() {
       return;
     }
     // this will force downloading data as an image (rather than open in new window)
-    var url = dataURL.replace(/^data:image\/[^;]/, "data:application/octet-stream");
+    var url = dataURL.replace(
+      /^data:image\/[^;]/,
+      "data:application/octet-stream"
+    );
     window.open(url); //save as .png
   }
 
-  window.addEventListener("keyup", function(event) {
+  window.addEventListener("keyup", function (event) {
     if (event.which == 73) {
       //"I"
       snapShot();
@@ -187,7 +193,7 @@ window.onload = function() {
   });
 };
 
-Main.onMeshesLoaded = function() {
+Main.onMeshesLoaded = function () {
   this.stats = new Stats();
   this.stats.setMode(0); // 0: fps, 1: ms, 2: mb
 
@@ -210,7 +216,7 @@ function repeatRender() {
 
   Main.controls.update();
 
-  setTimeout(function() {
+  setTimeout(function () {
     repeatRender();
   }, 0);
 }

@@ -543,31 +543,98 @@ Renderer.drawTrianglePhong = function (
   // (3) XYZ normal mapping: If xyz normal texture exists for the material,
   //                         convert the RGB value of the XYZ normal texture at the uv coordinates
   //                         to a normal vector and apply it at the pixel location.
-  for (var i = 0; i < 3; i++) {
-    var va = projectedVerts[(i + 1) % 3];
-    var vb = projectedVerts[(i + 2) % 3];
-    const na = normals[(i + 1) % 3];
-    const nb = normals[(i + 2) % 3];
+  // Flat shader
+  // Color of each face is computed based on the face normal
+  // (average of vertex normals) and face centroid.
+  const n1 = normals[0];
+  const n2 = normals[1];
+  const n3 = normals[2];
 
-    const phongMaterial = this.getPhongMaterial(uvs, material);
-    const color = Reflection.phongReflectionModel(
-      va,
-      undefined,
-      na,
-      new THREE.Vector3(0, 1, 0),
-      phongMaterial
-    );
+  // Compute the face normal and centroid
+  const n = new THREE.Vector3();
+  n.crossVectors(n2.clone().sub(n1), n3.clone().sub(n1));
+  n.normalize();
 
-    // Draw filled in triangle face with color
+  const v1 = verts[0];
+  const v2 = verts[1];
+  const v3 = verts[2];
 
-    var ba = new THREE.Vector2(vb.x - va.x, vb.y - va.y);
-    var len_ab = ba.length();
-    ba.normalize();
-    // draw line
-    for (var j = 0; j < len_ab; j += 0.5) {
-      var x = Math.round(va.x + ba.x * j);
-      var y = Math.round(va.y + ba.y * j);
-      this.buffer.setPixel(x, y, color);
+  // Compute the color of the face
+  const viewMat = new THREE.Matrix4().multiplyMatrices(
+    this.camera.projectionMatrix,
+    this.camera.matrixWorldInverse
+  );
+
+  const phongMaterial = this.getPhongMaterial(uvs, material);
+  const c1 = Reflection.phongReflectionModel(
+    v1,
+    viewMat,
+    n1,
+    this.lightPos,
+    phongMaterial
+  );
+
+  const c2 = Reflection.phongReflectionModel(
+    v2,
+    viewMat,
+    n2,
+    this.lightPos,
+    phongMaterial
+  );
+
+  const c3 = Reflection.phongReflectionModel(
+    v3,
+    viewMat,
+    n3,
+    this.lightPos,
+    phongMaterial
+  );
+
+  // Rasterize the triangle
+  // Compute barycentric coordinates for the triangle
+  const box = this.computeBoundingBox(projectedVerts);
+  let { minX, maxX, minY, maxY } = box;
+
+  minX = Math.floor(Math.max(minX, 0));
+  maxX = Math.floor(Math.min(maxX, this.width - 1));
+  minY = Math.floor(Math.max(minY, 0));
+  maxY = Math.floor(Math.min(maxY, this.height - 1));
+
+  // Iterate over the bounding box of the triangle
+  for (let x = minX; x <= maxX; x++) {
+    for (let y = minY; y <= maxY; y++) {
+      // Check if pixel is within the screen
+      if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+        continue;
+      }
+
+      const bary = this.computeBarycentric(projectedVerts, x, y);
+
+      // Check if pixel is inside the triangle
+      if (bary) {
+        // Compute depth value for the pixel
+        const depth =
+          (bary[0] / projectedVerts[0].w) * projectedVerts[0].z +
+          (bary[1] / projectedVerts[1].w) * projectedVerts[1].z +
+          (bary[2] / projectedVerts[2].w) * projectedVerts[2].z;
+
+        const [alpha, beta, gamma] = bary;
+
+        const interpolatedColor = c1
+          .copy()
+          .multipliedBy(alpha)
+          .plus(c2.copy().multipliedBy(beta))
+          .plus(c3.copy().multipliedBy(gamma));
+
+        // Check if pixel is closer than the current depth value
+        if (depth < this.zBuffer[x][y]) {
+          // Set pixel color
+          this.buffer.setPixel(x, y, interpolatedColor);
+
+          // Update z-buffer
+          this.zBuffer[x][y] = depth;
+        }
+      }
     }
   }
 };
