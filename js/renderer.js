@@ -652,6 +652,8 @@ Renderer.drawTrianglePhong = function (
   minY = Math.floor(Math.max(minY, 0));
   maxY = Math.floor(Math.min(maxY, this.height - 1));
 
+  let logOnce = true;
+
   // Iterate over the bounding box of the triangle
   for (let x = minX; x <= maxX; x++) {
     for (let y = minY; y <= maxY; y++) {
@@ -677,6 +679,27 @@ Renderer.drawTrianglePhong = function (
           .multiplyScalar(alpha)
           .add(uv2.clone().multiplyScalar(beta))
           .add(uv3.clone().multiplyScalar(gamma));
+
+        // JUST NEED TO GET THIS WORKING
+        const xyzNormalPx = material.xyzNormal.getPixel(
+          Math.floor(interpolatedUV.x * material.xyzNormal.width),
+          Math.floor(interpolatedUV.y * material.xyzNormal.height)
+        );
+
+        // Need to turn this into rgb and then do something with it
+        // const xyzNormal = new THREE.Vector3(
+        //   xyzNormalPx.r,
+        //   xyzNormalPx.g,
+        //   xyzNormalPx.b
+        // )
+        //   .normalize()
+        //   .multiplyScalar(2.0)
+        //   .subScalar(1.0);
+
+        if (logOnce) {
+          console.log(xyzNormal);
+          logOnce = false;
+        }
 
         const interpolatedVertex = v1
           .clone()

@@ -31,7 +31,7 @@ function Pixel(r, g, b, a) {
 }
 
 // make sure pixel values are between 0 and 255
-Pixel.prototype.clamp = function() {
+Pixel.prototype.clamp = function () {
   this.r = this.r < 0 ? 0 : this.r > 1 ? 1 : this.r;
   this.g = this.g < 0 ? 0 : this.g > 1 ? 1 : this.g;
   this.b = this.b < 0 ? 0 : this.b > 1 ? 1 : this.b;
@@ -39,7 +39,7 @@ Pixel.prototype.clamp = function() {
 };
 
 // copy value from web color code like '#a2881f' into pixel
-Pixel.prototype.fromHex = function(hex) {
+Pixel.prototype.fromHex = function (hex) {
   var bigint = parseInt(hex.substring(1), 16);
   this.r = ((bigint >> 16) & 255) / 255;
   this.g = ((bigint >> 8) & 255) / 255;
@@ -48,7 +48,7 @@ Pixel.prototype.fromHex = function(hex) {
 };
 
 // convert to hex (returns string)
-Pixel.prototype.toHex = function() {
+Pixel.prototype.toHex = function () {
   var r = Math.round(this.r) * 255;
   var g = Math.round(this.g) * 255;
   var b = Math.round(this.b) * 255;
@@ -66,7 +66,7 @@ Pixel.prototype.toHex = function() {
 // copy value from HSL into pixel
 // fromHSL( h, s, l ), where each is a number
 // fromHSL( hsl ), where hsl is an array containing the values
-Pixel.prototype.fromHSL = function(hOrHsl, s, l) {
+Pixel.prototype.fromHSL = function (hOrHsl, s, l) {
   if (hOrHsl !== null && typeof hOrHsl === "object") {
     var h = h.h;
     s = h.s;
@@ -77,7 +77,7 @@ Pixel.prototype.fromHSL = function(hOrHsl, s, l) {
   var m1, m2;
   m2 = l <= 0.5 ? l * (s + 1) : l + s - l * s;
   m1 = l * 2 - m2;
-  var hueToRGB = function(m1, m2, h) {
+  var hueToRGB = function (m1, m2, h) {
     h = h < 0 ? h + 1 : h > 1 ? h - 1 : h;
     if (h * 6 < 1) return m1 + (m2 - m1) * h * 6;
     if (h * 2 < 1) return m2;
@@ -90,7 +90,7 @@ Pixel.prototype.fromHSL = function(hOrHsl, s, l) {
 };
 
 // convert to HSL (returns values in an object)
-Pixel.prototype.toHSL = function() {
+Pixel.prototype.toHSL = function () {
   var r = this.r / 255,
     g = this.g / 255,
     b = this.b / 255;
@@ -125,7 +125,7 @@ Pixel.prototype.toHSL = function() {
   };
 };
 
-Pixel.prototype.copy = function() {
+Pixel.prototype.copy = function () {
   return new Pixel(this.r, this.g, this.b, this.a);
 };
 
@@ -133,7 +133,7 @@ Pixel.prototype.copy = function() {
 // alpha is not affected by these
 
 // adds argument p to this, returns this
-Pixel.prototype.plus = function(p) {
+Pixel.prototype.plus = function (p) {
   this.r += p.r;
   this.g += p.g;
   this.b += p.b;
@@ -141,7 +141,7 @@ Pixel.prototype.plus = function(p) {
 };
 
 // subtracts argument p to this, returns this
-Pixel.prototype.minus = function(p) {
+Pixel.prototype.minus = function (p) {
   this.r -= p.r;
   this.g -= p.g;
   this.b -= p.b;
@@ -149,7 +149,7 @@ Pixel.prototype.minus = function(p) {
 };
 
 // multiplies components by scalar s, returns this
-Pixel.prototype.multipliedBy = function(s) {
+Pixel.prototype.multipliedBy = function (s) {
   this.r *= s;
   this.g *= s;
   this.b *= s;
@@ -157,7 +157,7 @@ Pixel.prototype.multipliedBy = function(s) {
 };
 
 // divides components by scalar s, returns this
-Pixel.prototype.dividedBy = function(s) {
+Pixel.prototype.dividedBy = function (s) {
   s = 1 / s;
   this.r *= s;
   this.g *= s;
@@ -166,7 +166,7 @@ Pixel.prototype.dividedBy = function(s) {
 };
 
 // copies this pixel, adds argument p to it, returns the new pixel
-Pixel.prototype.copyAdd = function(p) {
+Pixel.prototype.copyAdd = function (p) {
   var q = new Pixel(0, 0, 0);
   q.r = this.r + p.r;
   q.g = this.g + p.g;
@@ -176,7 +176,7 @@ Pixel.prototype.copyAdd = function(p) {
 };
 
 // copies this pixel, subtracts argument p to it, returns the new pixel
-Pixel.prototype.copySub = function(p) {
+Pixel.prototype.copySub = function (p) {
   var q = new Pixel(0, 0, 0);
   q.r = this.r - p.r;
   q.g = this.g - p.g;
@@ -186,7 +186,7 @@ Pixel.prototype.copySub = function(p) {
 };
 
 // scale values by argument s and return result in new pixel
-Pixel.prototype.copyMultiplyScalar = function(s) {
+Pixel.prototype.copyMultiplyScalar = function (s) {
   var q = new Pixel(0, 0, 0);
   q.r = this.r * s;
   q.g = this.g * s;
@@ -196,7 +196,7 @@ Pixel.prototype.copyMultiplyScalar = function(s) {
 };
 
 // scale values by inverse of argument s and return result in new pixel
-Pixel.prototype.copyDivideScalar = function(s) {
+Pixel.prototype.copyDivideScalar = function (s) {
   var q = new Pixel(0, 0, 0);
   s = 1 / s;
   q.r = this.r * s;
@@ -227,7 +227,7 @@ function Image(width, height, data) {
 }
 
 // clears to transparent
-Image.prototype.clear = function() {
+Image.prototype.clear = function () {
   for (var i = 0; i < this.data.length; i++) {
     if (i % 4 == 3) {
       this.data[i] = 255;
@@ -237,7 +237,7 @@ Image.prototype.clear = function() {
   }
 };
 
-Image.prototype.display = function() {
+Image.prototype.display = function () {
   var canvas = Main.canvas;
   var context = Main.context;
 
@@ -248,7 +248,7 @@ Image.prototype.display = function() {
   context.putImageData(this.getImgData(), 0, 0);
 };
 
-Image.prototype.copy = function() {
+Image.prototype.copy = function () {
   var data = new Uint8ClampedArray(this.width * this.height * 4);
   for (var i = 0; i < data.length; i++) {
     data[i] = this.data[i];
@@ -256,7 +256,7 @@ Image.prototype.copy = function() {
   return new Image(this.width, this.height, data);
 };
 
-Image.prototype.getImgData = function() {
+Image.prototype.getImgData = function () {
   // this function should be this one-liner, but it only works in firefox and safari:
   // return new ImageData( this.data, this.width, this.height );
 
@@ -272,7 +272,7 @@ Image.prototype.getImgData = function() {
 
 // pixelIndex calls inlined for performance
 // NOTE: x and y must be integers
-Image.prototype.getPixel = function(x, y) {
+Image.prototype.getPixel = function (x, y) {
   var index = 4 * (y * this.width + x);
   var color = new Pixel(
     this.data[index] / 255,
@@ -284,7 +284,7 @@ Image.prototype.getPixel = function(x, y) {
   return color;
 };
 
-Image.prototype.setPixel = function(x, y, color) {
+Image.prototype.setPixel = function (x, y, color) {
   if (x >= 0 && y >= 0 && x < this.width && y < this.height) {
     var index = 4 * (y * this.width + x);
     this.data[index] = color.r * 255;
