@@ -680,25 +680,34 @@ Renderer.drawTrianglePhong = function (
           .add(uv2.clone().multiplyScalar(beta))
           .add(uv3.clone().multiplyScalar(gamma));
 
+          let xyzNormal;
         // JUST NEED TO GET THIS WORKING
-        const xyzNormalPx = material.xyzNormal.getPixel(
-          Math.floor(interpolatedUV.x * material.xyzNormal.width),
-          Math.floor(interpolatedUV.y * material.xyzNormal.height)
-        );
+        let got_xyz = false;
+        if (material.xyzNormal !== undefined) {
+          const xyzNormalPx = material.xyzNormal.getPixel(
+            Math.floor(interpolatedUV.x * material.xyzNormal.width),
+            Math.floor(interpolatedUV.y * material.xyzNormal.height)
+          );
 
-        // Need to turn this into rgb and then do something with it
-        // const xyzNormal = new THREE.Vector3(
-        //   xyzNormalPx.r,
-        //   xyzNormalPx.g,
-        //   xyzNormalPx.b
-        // )
-        //   .normalize()
-        //   .multiplyScalar(2.0)
-        //   .subScalar(1.0);
+          // Need to turn this into rgb and then do something with it
+          xyzNormal = new THREE.Vector3(
+            xyzNormalPx.r,
+            xyzNormalPx.g,
+            xyzNormalPx.b
+          );
 
-        if (logOnce) {
-          console.log(xyzNormal);
-          logOnce = false;
+          xyzNormal = xyzNormal.normalize();
+          xyzNormal = xyzNormal.multiplyScalar(2.0);
+          xyzNormal.x -= 1;
+          xyzNormal.y -= 1;
+          xyzNormal.z -= 1;
+          //.normalize().multiplyScalar(2.0).subScalar(1.0);
+
+          // if (logOnce && xyzNormal) {
+          //   console.log(xyzNormal);
+          //   logOnce = false;
+          // }
+          got_xyz = true;
         }
 
         const interpolatedVertex = v1
@@ -707,11 +716,15 @@ Renderer.drawTrianglePhong = function (
           .add(v2.clone().multiplyScalar(beta))
           .add(v3.clone().multiplyScalar(gamma));
 
-        const interpolatedNormal = n1
+        let interpolatedNormal = n1
           .clone()
           .multiplyScalar(alpha)
           .add(n2.clone().multiplyScalar(beta))
           .add(n3.clone().multiplyScalar(gamma));
+
+          if (got_xyz){
+            interpolatedNormal = xyzNormal.normalize();
+          }
 
         const phongMaterial =
           uvs === undefined
