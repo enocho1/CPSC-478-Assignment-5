@@ -368,6 +368,26 @@ Renderer.computeBarycentric = function (projectedVerts, x, y) {
   return [l0, l1, l2];
 };
 
+Renderer.safeExtractUv = function (uv) {
+  if (uv !== undefined) {
+    return uv;
+  }
+
+  return [undefined, undefined, undefined];
+};
+
+Renderer.barycentricInterpolation = function (alpha, beta, gamma, v1, v2, v3) {
+  if (v1 === undefined || v2 === undefined || v3 === undefined) {
+    return undefined;
+  }
+
+  return v1
+    .clone()
+    .multiplyScalar(alpha)
+    .add(v2.clone().multiplyScalar(beta))
+    .add(v3.clone().multiplyScalar(gamma));
+};
+
 Renderer.drawTriangleWire = function (projectedVerts) {
   var color = new Pixel(1.0, 0, 0);
   for (var i = 0; i < 3; i++) {
@@ -420,9 +440,11 @@ Renderer.drawTriangleFlat = function (
     this.camera.matrixWorldInverse
   );
 
-  const uv1 = uvs[0];
-  const uv2 = uvs[1];
-  const uv3 = uvs[2];
+  const [uv1, uv2, uv3] = this.safeExtractUv(uvs);
+
+  // const uv1 = uvs[0];
+  // const uv2 = uvs[1];
+  // const uv3 = uvs[2];
 
   // Rasterize the triangle
   // Compute barycentric coordinates for the triangle
@@ -447,11 +469,14 @@ Renderer.drawTriangleFlat = function (
       // Check if pixel is inside the triangle
       if (bary) {
         const [alpha, beta, gamma] = bary;
-        const interpolatedUV = uv1
-          .clone()
-          .multiplyScalar(alpha)
-          .add(uv2.clone().multiplyScalar(beta))
-          .add(uv3.clone().multiplyScalar(gamma));
+        const interpolatedUV = this.barycentricInterpolation(
+          alpha,
+          beta,
+          gamma,
+          uv1,
+          uv2,
+          uv3
+        );
 
         const phongMaterial =
           uvs === undefined
@@ -506,9 +531,7 @@ Renderer.drawTriangleGouraud = function (
   const v2 = verts[1];
   const v3 = verts[2];
 
-  const uv1 = uvs[0];
-  const uv2 = uvs[1];
-  const uv3 = uvs[2];
+  const [uv1, uv2, uv3] = this.safeExtractUv(uvs);
 
   // Compute the color of the face
   const viewMat = new THREE.Matrix4().multiplyMatrices(
@@ -546,11 +569,14 @@ Renderer.drawTriangleGouraud = function (
 
         const [alpha, beta, gamma] = bary;
 
-        const interpolatedUV = uv1
-          .clone()
-          .multiplyScalar(alpha)
-          .add(uv2.clone().multiplyScalar(beta))
-          .add(uv3.clone().multiplyScalar(gamma));
+        const interpolatedUV = this.barycentricInterpolation(
+          alpha,
+          beta,
+          gamma,
+          uv1,
+          uv2,
+          uv3
+        );
 
         const phongMaterial =
           uvs === undefined
@@ -631,9 +657,7 @@ Renderer.drawTrianglePhong = function (
   const v2 = verts[1];
   const v3 = verts[2];
 
-  const uv1 = uvs[0];
-  const uv2 = uvs[1];
-  const uv3 = uvs[2];
+  const [uv1, uv2, uv3] = this.safeExtractUv(uvs);
 
   // Compute the color of the face
   const viewMat = new THREE.Matrix4().multiplyMatrices(
@@ -674,13 +698,16 @@ Renderer.drawTrianglePhong = function (
 
         const [alpha, beta, gamma] = bary;
 
-        const interpolatedUV = uv1
-          .clone()
-          .multiplyScalar(alpha)
-          .add(uv2.clone().multiplyScalar(beta))
-          .add(uv3.clone().multiplyScalar(gamma));
+        const interpolatedUV = this.barycentricInterpolation(
+          alpha,
+          beta,
+          gamma,
+          uv1,
+          uv2,
+          uv3
+        );
 
-          let xyzNormal;
+        let xyzNormal;
         // JUST NEED TO GET THIS WORKING
         let got_xyz = false;
         if (material.xyzNormal !== undefined) {
@@ -701,12 +728,6 @@ Renderer.drawTrianglePhong = function (
           xyzNormal.x -= 1;
           xyzNormal.y -= 1;
           xyzNormal.z -= 1;
-          //.normalize().multiplyScalar(2.0).subScalar(1.0);
-
-          // if (logOnce && xyzNormal) {
-          //   console.log(xyzNormal);
-          //   logOnce = false;
-          // }
           got_xyz = true;
         }
 
@@ -722,9 +743,9 @@ Renderer.drawTrianglePhong = function (
           .add(n2.clone().multiplyScalar(beta))
           .add(n3.clone().multiplyScalar(gamma));
 
-          if (got_xyz){
-            interpolatedNormal = xyzNormal.normalize();
-          }
+        if (got_xyz) {
+          interpolatedNormal = xyzNormal.normalize();
+        }
 
         const phongMaterial =
           uvs === undefined
