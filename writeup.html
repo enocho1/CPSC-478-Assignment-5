@@ -48,7 +48,7 @@
                 </em>
                 <p>
                     <strong>
-                        Jarred Parr (jp2844), Enoch Omale (eo239)
+                        Jarred Parr (jp2844), Enoch Omale (eo329)
                     </strong>
                 </p>
                 <br>
@@ -79,12 +79,12 @@
         <p>
             <hr>
         <p>
-            (Your description of your implementation of Perspective Projection goes here...)
+            The implementation is very similar to the naive orthogonal projection given. This time we first multiply the vertex by a viewing matrix and then divide through by w (the fourth homogeneous coordiate). Then we take the new xyz values as our coordinate.
 
             <br> <a
                 href='index.html?Camera=[2.8646,2.2455,1.5975];[0.47999,-0.82485,0.29873];[0,0,0]&Mesh=cube.obj;false&Resolution=320x240&Shading_Model=Wire&Ambient=[0,0,0]&Diffuse=[255,255,255]&Specular=[255,255,255]&Shininess=5'>Camera=[2.8646,2.2455,1.5975];[0.47999,-0.82485,0.29873];[0,0,0]&Mesh=cube.obj;false&Resolution=320x240&Shading_Model=Wire&Ambient=[0,0,0]&Diffuse=[255,255,255]&Specular=[255,255,255]&Shininess=5</a>
 
-            <br><img src='results/placeholder.png'>
+            <br><img src='results/projection.png'>
         <p>
             <hr>
         <p><a name='Phong+Reflection+Model'></a>
@@ -92,7 +92,7 @@
         <p>
             <hr>
         <p>
-            (Your description of your implementation of Phong Reflection Model goes here...)
+            We calculate the viewing direction as the position from the light to the vertex. being coloured. this is also reflected in the normal. the rest of the variables are given by the phong material, and are simply subbed into the equation for phong reflecttion.
 
         <p>
             <hr>
@@ -101,7 +101,7 @@
         <p>
             <hr>
         <p>
-            (Your description of your implementation of Bounding Box goes here...)
+            we compute the min and max x and y values for a triangle by looping through the three verts and updating our min and max values.
 
         <p>
             <hr>
@@ -110,7 +110,7 @@
         <p>
             <hr>
         <p>
-            (Your description of your implementation of Barycentric Coordinates goes here...)
+            assuming at first that the point is inside the triangle we compute the areas of the triangles formed with the point and each side as a fraction of the whole triangles area. these fractions are then tested (should all be between 0 and 1 and sum to 1) to see if the point is actually inside the triangle. The fractional areas are our barycentric coordinates.
 
         <p>
             <hr>
@@ -135,12 +135,12 @@
         <p>
             <hr>
         <p>
-            (Your description of your implementation of Gouraud Shader goes here...)
+            For each triangle, Gouraud shading uses the phong reflection model to calculate colours at each of the three vertices. then while rasterizing, we use the barycentric coordinates of the pixels to interpolate the colour at each pixel.
 
             <br> <a
                 href='index.html?Camera=[-3.7257,4.6729,1.6024];[-0.62123,-0.64694,0.4422];[0,0,0]&Mesh=cow.obj;false&Resolution=640x480&Shading_Model=Gouraud&Ambient=#483c14&Diffuse=#2d87ac&Specular=#a2c9d2&Shininess=5'>Camera=[-3.7257,4.6729,1.6024];[-0.62123,-0.64694,0.4422];[0,0,0]&Mesh=cow.obj;false&Resolution=640x480&Shading_Model=Gouraud&Ambient=#483c14&Diffuse=#2d87ac&Specular=#a2c9d2&Shininess=5</a>
 
-            <br><img src='results/placeholder.png'>
+            <br><img src='results/gouraud.png'>
         <p>
             <hr>
         <p><a name='Phong+Shader'></a>
@@ -148,12 +148,12 @@
         <p>
             <hr>
         <p>
-            (Your description of your implementation of Phong Shader goes here...)
+            Similar to gouraud shading, with a twist. for each triangle we loop through the pixels to colour with barycentric coordinates and use these coordinates to intermpolate the normals of the triangles vertices. we feed this normal into the phong reflection model. so we calculate a new colour for every pixel now rather than just interpolating between three.
 
             <br> <a
                 href='index.html?Camera=[-3.7257,4.6729,1.6024];[-0.62123,-0.64694,0.4422];[0,0,0]&Mesh=cow.obj;false&Resolution=640x480&Shading_Model=Phong&Ambient=#483c14&Diffuse=#2d87ac&Specular=#a2c9d2&Shininess=5'>Camera=[-3.7257,4.6729,1.6024];[-0.62123,-0.64694,0.4422];[0,0,0]&Mesh=cow.obj;false&Resolution=640x480&Shading_Model=Phong&Ambient=#483c14&Diffuse=#2d87ac&Specular=#a2c9d2&Shininess=5</a>
 
-            <br><img src='results/placeholder.png'>
+            <br><img src='results/phongsh.png'>
         <p>
             <hr>
         <p><a name='Diffuse+and+Specular+Mapping'></a>
@@ -195,7 +195,7 @@
         <p>
             <hr>
         <p>
-            (Your description of your implementation of Optimization Contest goes here...)
+            NA
     </div>
 </body>
 
